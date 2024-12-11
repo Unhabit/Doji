@@ -9,6 +9,14 @@
   <body>
     {% include "components/navbar.html.jinja" %}
     <h1 class="text-center my-4">Browse</h1>
+
+    <form class="container" action="/browse">
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" name="query" placeholder="search" aria-label="search" aria-describedby="button-addon2" value="{{ query }}" >
+            <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Search</button>
+        </div>
+    </form>
+
     <main class="container">
       <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
         {% for item in products %}
