@@ -34,7 +34,7 @@ class User:
         return str(self.id)
 
 @login_manager.user_loader
-def load_uer(user_id):
+def load_user(user_id):
     conn = connect_db()
     cursor = conn.cursor()
     
@@ -108,6 +108,30 @@ def product_page(product_id):
         abort(404)
 
     return render_template( "product_page.html.jinja",  product=results)
+
+@app.route("/product/<product_id>/cart", methods=["POST"])
+@flask_login.login_required
+def add_to_cart(product_id):
+
+    quantity = request.form["quantity"]
+    customer_id = flask_login.current_user()
+
+    conn = connect_db()
+    cursor = conn.cursor()
+
+    
+    cursor.execute(f"""
+        INSERT INTO `Cart` (`customer_id`, `quantity`, `product_id`)
+        VALUES ({customer_id}, {quantity}, {product_id})
+    """)
+
+    cursor.close()
+    conn.close()
+
+    flash("Item successfully added to cart")
+    return redirect("/cart")
+
+
 
 
 @app.route("/signup", methods=["POST", "GET"])
@@ -198,5 +222,10 @@ def logout():
 @app.route("/cart")
 @flask_login.login_required
 def cart():
+    customer_id = flask_login.current_user.id
+    conn = connect_db()
+    cursor = conn.cursor()
+
+
     return "cart page"
 
