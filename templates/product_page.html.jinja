@@ -23,7 +23,7 @@
                     </div>
                     <p class="lead">{{ product["description"] }}</p>
                     <div class="d-flex">
-                    <form method="post" action="">
+                    <form method="post" action="/product/{{product['id']}}/cart">
                         <input class="form-control text-center me-3" id="inputQuantity" type="number" value="1" style="max-width: 4rem" min="1" name = "quantity">
                         <button class="btn btn-outline-dark flex-shrink-0" type="submit">Add to cart</button>
                     </form>
