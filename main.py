@@ -123,6 +123,8 @@ def add_to_cart(product_id):
     cursor.execute(f"""
         INSERT INTO `Cart` (`customer_id`, `quantity`, `product_id`)
         VALUES ({customer_id}, {quantity}, {product_id})
+        ON DUPLICATE KEY UPDATE 
+            `quantity` = `quantity` + {quantity}
     """)
 
     cursor.close()
@@ -230,9 +232,55 @@ def cart():
 
     results = cursor.fetchall()
 
+    total=0
+    for item in results:
+        total+=item['price'] * item['quantity']
+
     cursor.close()
     conn.close()
 
 
-    return render_template("cart.html.jinja" , products = results)
+    return render_template("cart.html.jinja" , products = results, total=total)
 
+@app.route("/cart/remove", methods=["POST"])
+@flask_login.login_required
+def remove_item():
+    cart_id = request.form.get("cart_id")
+    customer_id = flask_login.current_user.id
+
+    conn = connect_db()
+    cursor = conn.cursor()
+
+    cursor.execute(f"DELETE FROM `Cart` WHERE `id` = {cart_id} AND `customer_id` = {customer_id};")
+    
+    cursor.close()
+    conn.close()
+
+    flash("Item removed from cart successfully.")
+    return redirect("/cart")
+
+@app.route("/cart/update", methods=["POST"])
+@flask_login.login_required
+def update_quantity():
+    cart_id = request.form.get("cart_id")
+    new_quantity = int(request.form.get("quantity"))
+    customer_id = flask_login.current_user.id   
+
+    if new_quantity < 1:
+        flash("Quantity must be at least 1.")
+        return redirect("/cart")
+
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    cursor.execute(f"""
+        UPDATE `Cart`
+        SET `quantity` = {new_quantity}
+        WHERE `id` = {cart_id} AND `customer_id` = {customer_id};
+    """)
+
+    cursor.close()
+    conn.close()
+
+    flash("Cart updated successfully.")
+    return redirect("/cart")
