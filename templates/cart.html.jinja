@@ -45,6 +45,9 @@
         <div class="text-end mt-4">
             <h4>Total Price: ${{ "%.2f" | format(total)  }}</h4>
         </div>
+        <div class="text-end mt-4">
+            <a href="/cart/checkout" class="btn btn-success btn-lg">Proceed to Checkout</a>
+        </div>
       {% else %}
         <div class="alert alert-warning mt-4" role="alert">
           Your cart is empty. <a href="/browse" class="alert-link">buy something please!! i need the money</a>

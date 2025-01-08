@@ -284,3 +284,68 @@ def update_quantity():
 
     flash("Cart updated successfully.")
     return redirect("/cart")
+
+
+@app.route("/cart/checkout", methods=["GET", "POST"])
+@flask_login.login_required
+def checkout():
+    customer_id = flask_login.current_user.id
+    conn = connect_db()
+    cursor = conn.cursor()
+
+    NY_SALES_TAX_RATE = 0.08875  #8.875%
+    SHIPPING_COST = 5.99
+
+    cursor.execute(f"""
+            SELECT `Product`.`price`, `Cart`.`quantity`
+            FROM `Cart`
+            JOIN `Product` ON `Cart`.`product_id` = `Product`.`id`
+            WHERE `Cart`.`customer_id` = {customer_id};
+        """)
+    cart_items = cursor.fetchall()
+
+    subtotal = sum(item['price'] * item['quantity'] for item in cart_items)
+    tax = subtotal * NY_SALES_TAX_RATE
+    total = subtotal + tax + SHIPPING_COST
+
+    if request.method == "POST":
+        first_name = request.form.get("first_name")
+        last_name = request.form.get("last_name")
+        email = request.form.get("email").strip()
+        phone = request.form.get("phone").strip()
+        street = request.form.get("street").strip()
+        city = request.form.get("city").strip()
+        state = request.form.get("state").strip()
+        zip_code = request.form.get("zip").strip()
+
+        cursor.execute(f"""
+            INSERT INTO Sale 
+                (customer_id, status, timestamp, first_name, last_name, email, phone, street, city, state, zip_code)
+            VALUES 
+                ({customer_id}, 2 , NOW() , '{first_name}', '{last_name}', '{email}', '{phone}', '{street}', '{city}', '{state}', '{zip_code}');
+        """)
+
+        cursor.execute(f"DELETE FROM `Cart` WHERE `customer_id` = {customer_id};")
+        cursor.close()
+        conn.close()
+
+        flash("Order placed successfully!")
+        return redirect("/")
+
+    cursor.execute(f"""
+        SELECT `Product`.`name`, `Product`.`price`, `Cart`.`quantity`, `Product`.`product_image`
+        FROM `Cart`
+        JOIN `Product` ON `Cart`.`product_id` = `Product`.`id`
+        WHERE `Cart`.`customer_id` = {customer_id};
+    """)
+
+    cart_items = cursor.fetchall()
+
+    total = sum(item['price'] * item['quantity'] for item in cart_items)
+    tax = subtotal * NY_SALES_TAX_RATE
+    total = subtotal + tax + SHIPPING_COST
+
+    cursor.close()
+    conn.close()
+
+    return render_template("checkout.html.jinja", cart_items=cart_items, total=total, subtotal=subtotal, tax=tax, shipping=SHIPPING_COST)
