@@ -293,7 +293,7 @@ def checkout():
     conn = connect_db()
     cursor = conn.cursor()
 
-    NY_SALES_TAX_RATE = 0.08875  #8.875%
+    NY_SALES_TAX_RATE = 0.08875  
     SHIPPING_COST = 5.99
 
     cursor.execute(f"""
@@ -341,6 +341,9 @@ def checkout():
 
     cart_items = cursor.fetchall()
 
+    if subtotal >= 24.98:
+        SHIPPING_COST = 0.00
+
     total = sum(item['price'] * item['quantity'] for item in cart_items)
     tax = subtotal * NY_SALES_TAX_RATE
     total = subtotal + tax + SHIPPING_COST
@@ -349,3 +352,61 @@ def checkout():
     conn.close()
 
     return render_template("checkout.html.jinja", cart_items=cart_items, total=total, subtotal=subtotal, tax=tax, shipping=SHIPPING_COST)
+
+@app.route("/cart/checkout/thankyou")
+def thankyou():
+    return ("ORDER PLACED")
+
+
+@app.route("/product/<product_id>/review", methods=["GET", "POST"])
+@flask_login.login_required
+def product_reviews(product_id):
+    conn = connect_db()
+    cursor = conn.cursor()
+
+    if request.method == "POST":
+        if not flask_login.current_user.is_authenticated:
+            flash("You must be logged in to leave a review.")
+            return redirect("/signin")
+        
+        customer_id = flask_login.current_user.id
+        rating = int(request.form.get("rating"))
+        description = request.form.get("description")
+
+        if rating < 1 or rating > 5:
+            flash("Rating must be between 1 and 5.")
+            return redirect(f"/product/{product_id}/review")
+        
+        rating = request.form.get("rating")
+        description = request.form.get("description")
+
+        cursor.execute(
+            f"""
+            INSERT INTO `Review` (`product_id`, `customer_id`, `rating`, `description`, `timestamp`, `title`)
+            VALUES ({product_id}, {customer_id}, {rating}, '{description}', NOW(), 2)
+            ON DUPLICATE KEY UPDATE 
+                `rating` = {rating}, `description` = '{description}', `timestamp` = NOW();
+            """
+        )
+        flash("Review submitted successfully.")
+        return redirect(f"/product/{product_id}")
+
+    cursor.execute(f"SELECT * FROM `Product` WHERE `id` = {product_id};")
+    product = cursor.fetchone()
+    if not product:
+        abort(404)
+
+    cursor.execute(
+        f"""
+        SELECT `Review`.`rating`, `Review`.`description`, `Review`.`timestamp`, `Customer`.`username`
+        FROM `Review`
+        JOIN `Customer` ON `Review`.`customer_id` = `Customer`.`id`
+        WHERE `Review`.`product_id` = {product_id};
+        """
+    )
+    reviews = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template("product_page.html.jinja", product=product, reviews=reviews)
