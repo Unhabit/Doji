@@ -18,6 +18,10 @@
                 <div class="col-md-6">
                     <div class="small mb-1">SKU: {{ product['id'] }}</div>
                     <h1 class="display-5 fw-bolder">{{ product["name"] }}</h1>
+                    <div class="mb-3">
+                        <span class="fw-bold">Average Rating: {{avg_rating}}
+                        </span>
+                    </div>
                     <div class="fs-5 mb-5">
                         <span>${{ product["price"] }}</span>
                     </div>
@@ -30,17 +34,44 @@
                     </div>
                     <form method="post" action="/product/{{product['id']}}/review">
                         <div class="mb-3">
-                            <label for="reviewText" class="form-label">Write a Review:</label>
-                            <textarea class="form-control" id="reviewText" name="review_text" rows="3" placeholder="Share your thoughts about the product..." required></textarea>
+                            <label for="title" class="form-label">Title:</label>
+                            <input type="text" class="form-control" id="title" name="title" placeholder="Review Title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="comment" class="form-label">Write a Review:</label>
+                            <textarea class="form-control" id="comment" name="comment" rows="3" placeholder="Share your thoughts about the product..." required></textarea>
                         </div>
                         <div class="mb-3">
                             <label for="rating" class="form-label">Rating (1-5):</label>
                             <input type="number" class="form-control" id="rating" name="rating" min="1" max="5" required>
                         </div>
-                        <button class="btn btn-outline-dark" type="submit">Submit Review</button>
+                            <button class="btn btn-outline-dark" type="submit">Submit Review</button>
                     </form>
                 </div>
             </div>
+        </div>
+    </section>
+
+    <section class="py-5 bg-light">
+        <div class="container px-4 px-lg-5">
+            <h2 class="fw-bolder mb-4">Customer Reviews</h2>
+            {% if reviews %}
+                 <ul class="list-group">
+                {% for review in reviews %}
+                    <li class="list-group-item">
+                    <div>
+                    <strong>{{ review.username }}</strong> 
+                    <span class="text-muted">({{ review.rating }} / 5 stars)</span>
+                    </div>
+                    <p>{{ review.comment }}</p>
+                    <small class="text-muted">Reviewed on {{ review.timestamp }}</small>
+                    </li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted">No reviews yet.</p>
+            {% endif %}
+
         </div>
     </section>
 

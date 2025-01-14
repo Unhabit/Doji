@@ -364,41 +364,40 @@ def product_reviews(product_id):
     conn = connect_db()
     cursor = conn.cursor()
 
-    if request.method == "POST":
-        if not flask_login.current_user.is_authenticated:
-            flash("You must be logged in to leave a review.")
-            return redirect("/signin")
-        
-        customer_id = flask_login.current_user.id
-        rating = int(request.form.get("rating"))
-        description = request.form.get("description")
-
-        if rating < 1 or rating > 5:
-            flash("Rating must be between 1 and 5.")
-            return redirect(f"/product/{product_id}/review")
-        
-        rating = request.form.get("rating")
-        description = request.form.get("description")
-
-        cursor.execute(
-            f"""
-            INSERT INTO `Review` (`product_id`, `customer_id`, `rating`, `description`, `timestamp`, `title`)
-            VALUES ({product_id}, {customer_id}, {rating}, '{description}', NOW(), 2)
-            ON DUPLICATE KEY UPDATE 
-                `rating` = {rating}, `description` = '{description}', `timestamp` = NOW();
-            """
-        )
-        flash("Review submitted successfully.")
-        return redirect(f"/product/{product_id}")
-
     cursor.execute(f"SELECT * FROM `Product` WHERE `id` = {product_id};")
     product = cursor.fetchone()
     if not product:
         abort(404)
 
+    if request.method == "POST":
+        if not flask_login.current_user.is_authenticated:
+            flash("You must be logged in to leave a review.")
+            return redirect("/signin")
+
+        customer_id = flask_login.current_user.id
+        rating = request.form.get("rating")
+        comment = request.form.get("comment")
+        title = request.form.get("title", "No Title")
+
+        if not rating.isdigit() or not (1 <= int(rating) <= 5):
+            flash("Rating must be a number between 1 and 5.")
+            return redirect(f"/product/{product_id}/review")
+
+        cursor.execute(f"""
+            INSERT INTO `Review` (`product_id`, `customer_id`, `rating`, `comment`, `timestamp`, `title`)
+            VALUES ({product_id}, {customer_id}, {rating}, '{comment}', NOW(), '{title}')
+            ON DUPLICATE KEY UPDATE 
+                `rating` = {rating}, 
+                `comment` = '{comment}', 
+                `timestamp` = NOW(),
+                `title` = '{title}';
+        """)
+        flash("Review submitted successfully.")
+        return redirect(f"/product/{product_id}")
+
     cursor.execute(
         f"""
-        SELECT `Review`.`rating`, `Review`.`description`, `Review`.`timestamp`, `Customer`.`username`
+        SELECT `Review`.`rating`, `Review`.`comment`, `Review`.`timestamp`, `Customer`.`username`
         FROM `Review`
         JOIN `Customer` ON `Review`.`customer_id` = `Customer`.`id`
         WHERE `Review`.`product_id` = {product_id};
@@ -406,7 +405,11 @@ def product_reviews(product_id):
     )
     reviews = cursor.fetchall()
 
+    avg_rating = 0
+    if reviews:
+        avg_rating = sum([review['rating'] for review in reviews]) / len(reviews)
+
     cursor.close()
     conn.close()
 
-    return render_template("product_page.html.jinja", product=product, reviews=reviews)
+    return render_template("product_page.html.jinja", product=product, reviews=reviews, avg_rating=avg_rating)
