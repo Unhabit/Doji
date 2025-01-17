@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, flash, abort
 import flask_login
 import pymysql
 from dynaconf import Dynaconf
+from datetime import datetime
 
 
 app = Flask(__name__)
@@ -90,24 +91,59 @@ def product_browse():
     return render_template("browse.html.jinja", products = results, query=query)
 
 
-@app.route("/product/<product_id>")
+@app.route("/product/<product_id>", methods=["POST", "GET"])
 def product_page(product_id):
-
     conn = connect_db()
-
     cursor = conn.cursor()
-    
-    cursor.execute(f"SELECT * FROM `Product` WHERE `id` = {product_id} ;")
 
-    results = cursor.fetchone()
+    cursor.execute(f"SELECT * FROM `Product` WHERE `id` = {product_id};")
+    product = cursor.fetchone()
+
+    if product is None:
+        abort(404)
+
+    if request.method == "POST":
+        customer_id = flask_login.current_user.id
+        rating = request.form.get("rating")
+        comment = request.form.get("comment")
+        title = request.form.get("title", "No Title")
+
+        if rating:
+            cursor.execute(
+                f"""
+                INSERT INTO `Review` (`product_id`, `customer_id`, `rating`, `comment`, `timestamp`, `title`)
+                VALUES ({product_id}, {customer_id}, {rating}, '{comment}', NOW(), '{title}')
+                ON DUPLICATE KEY UPDATE 
+                    `rating` = {rating}, 
+                    `comment` = '{comment}', 
+                    `timestamp` = NOW(),
+                    `title` = '{title}';
+                """
+            )
+
+    cursor.execute(
+        f"""
+        SELECT `Review`.`rating`, `Review`.`comment`, `Review`.`timestamp`, `Customer`.`username`
+        FROM `Review`
+        JOIN `Customer` ON `Review`.`customer_id` = `Customer`.`id`
+        WHERE `Review`.`product_id` = {product_id};
+        """
+    )
+    reviews = cursor.fetchall()
+
+    cursor.execute(
+        f"""
+        SELECT ROUND(AVG(`rating`), 1) AS avg_rating
+        FROM `Review`
+        WHERE `product_id` = {product_id};
+        """
+    )
+    avg_rating = cursor.fetchone()
 
     cursor.close()
     conn.close()
-    
-    if results is None:
-        abort(404)
 
-    return render_template( "product_page.html.jinja",  product=results)
+    return render_template("product_page.html.jinja", product=product, avg_rating=avg_rating, reviews=reviews)
 
 @app.route("/product/<product_id>/cart", methods=["POST"])
 @flask_login.login_required
@@ -357,59 +393,7 @@ def checkout():
 def thankyou():
     return ("ORDER PLACED")
 
+@app.route("/contact")
+def contact():
 
-@app.route("/product/<product_id>/review", methods=["GET", "POST"])
-@flask_login.login_required
-def product_reviews(product_id):
-    conn = connect_db()
-    cursor = conn.cursor()
-
-    cursor.execute(f"SELECT * FROM `Product` WHERE `id` = {product_id};")
-    product = cursor.fetchone()
-    if not product:
-        abort(404)
-
-    if request.method == "POST":
-        if not flask_login.current_user.is_authenticated:
-            flash("You must be logged in to leave a review.")
-            return redirect("/signin")
-
-        customer_id = flask_login.current_user.id
-        rating = request.form.get("rating")
-        comment = request.form.get("comment")
-        title = request.form.get("title", "No Title")
-
-        if not rating.isdigit() or not (1 <= int(rating) <= 5):
-            flash("Rating must be a number between 1 and 5.")
-            return redirect(f"/product/{product_id}/review")
-
-        cursor.execute(f"""
-            INSERT INTO `Review` (`product_id`, `customer_id`, `rating`, `comment`, `timestamp`, `title`)
-            VALUES ({product_id}, {customer_id}, {rating}, '{comment}', NOW(), '{title}')
-            ON DUPLICATE KEY UPDATE 
-                `rating` = {rating}, 
-                `comment` = '{comment}', 
-                `timestamp` = NOW(),
-                `title` = '{title}';
-        """)
-        flash("Review submitted successfully.")
-        return redirect(f"/product/{product_id}")
-
-    cursor.execute(
-        f"""
-        SELECT `Review`.`rating`, `Review`.`comment`, `Review`.`timestamp`, `Customer`.`username`
-        FROM `Review`
-        JOIN `Customer` ON `Review`.`customer_id` = `Customer`.`id`
-        WHERE `Review`.`product_id` = {product_id};
-        """
-    )
-    reviews = cursor.fetchall()
-
-    avg_rating = 0
-    if reviews:
-        avg_rating = sum([review['rating'] for review in reviews]) / len(reviews)
-
-    cursor.close()
-    conn.close()
-
-    return render_template("product_page.html.jinja", product=product, reviews=reviews, avg_rating=avg_rating)
+    return render_template ("contact.html.jinja")

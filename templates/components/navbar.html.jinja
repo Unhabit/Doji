@@ -1,33 +1,37 @@
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container px-4 px-lg-5">
     <a class="navbar-brand" href="/">Doji</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
-            <li class="nav-item"><a class="nav-link" aria-current="page" href="/">Home</a></li>
-            <li class="nav-item"><a class="nav-link" href="/browse">Products</a></li>
-            <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
-            <li class="nav-item"><a class="nav-link" href="/signup">Sign Up</a></li>
-            <li class="nav-item dropdown"></li>
-          </ul>
-        <form class="d-flex " role="search" action="/browse">
-          <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search" name="query" value="{{ query }}">
-          <button class="btn btn-outline-dark" type="submit">Search</button>
-        </form>
-{% if current_user.is_authenticated%}
-  hi {{current_user.username}}
-  {% else %}
-  <a href="/signin" class = "btn btn-outline-dark">login</a>
-{% endif%}
-
-        <a href="/cart"
-          <button class="btn btn-outline-dark" type="submit" >
-          <i class="bi-cart-fill me-1"></i>
-
-            Cart
-            <span class="badge bg-dark text-white ms-1 rounded-pill mr-2"></span>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+        <li class="nav-item"><a class="nav-link" aria-current="page" href="/" style="color: white;">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="/browse" style="color: white;">Products</a></li>
+        <li class="nav-item"><a class="nav-link" href="https://forms.gle/JuGWMcDHEN9y3vTu5" target="_blank" style="color: white;">Contact</a></li>
+        <li class="nav-item"><a class="nav-link" href="/signup" style="color: white;">Sign Up</a></li>
+      </ul>
+      <form class="d-flex" role="search" action="/browse">
+        <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search" name="query" value="{{ query }}">
+        <button class="btn btn-outline-light" type="submit">Search</button>
+      </form>
+      {% if current_user.is_authenticated %}
+        <div class="dropdown">
+          <button class="btn btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            {{ current_user.username }}
           </button>
-        </a>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+            <li><a class="dropdown-item" href="/logout">Logout</a></li>
+          </ul>
         </div>
+      {% else %}
+        <a href="/signin" class="btn btn-outline-light" >Login</a>
+      {% endif %}
+      <a href="/cart" class="btn btn-outline-light">
+        <i class="bi-cart-fill me-1"></i>
+        Cart
+        <span class="badge bg-dark text-white ms-1 rounded-pill"></span>
+      </a>
+    </div>
   </div>
 </nav>
