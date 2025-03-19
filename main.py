@@ -53,7 +53,7 @@ def load_user(user_id):
 
 def connect_db():
     conn = pymysql.connect(
-        host = "10.100.34.80",
+        host = "db.steamcenter.tech",
         database = "nshovo_doji",
         user = "nshovo",
         password = conf.password,
