@@ -34,6 +34,12 @@
   <body>
     {% include "components/navbar.html.jinja" %}
 
+    {% for message in get_flashed_messages() %}
+                <div class="alert alert-primary" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+
     <div class="hero-section" style="black;">
       <h1>Welcome to Doji!</h1>
       <p>Your ultimate destination for fun, quality toys for kids of all ages. Start exploring today!</p>

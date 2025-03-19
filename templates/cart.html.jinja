@@ -17,6 +17,11 @@
     </style>
   </head>
   <body>
+    {% for message in get_flashed_messages() %}
+                <div class="alert alert-primary" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
     {% include "components/navbar.html.jinja" %}
     <div class="container mt-5">
       <h1 class="mb-4 text-center">Your Cart</h1>
